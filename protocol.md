@@ -22,7 +22,7 @@ Update timer
 
 Delay in ms for the next request to the server.
     
-    BODY  = "ttl" SP DIGIT+ LF
+    BODY = "ttl" SP DIGIT+ LF
 
 Example:
     
@@ -35,7 +35,7 @@ Text
 
 The text that is displayed on the LCD-Display. 
 
-    BODY  = "text" SP DIGIT+ SP [CHAR+] LF
+    BODY = "text" SP DIGIT+ SP [CHAR+] LF
 
 Example:
     
