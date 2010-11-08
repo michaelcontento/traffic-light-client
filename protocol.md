@@ -1,9 +1,7 @@
 Lamp
 ----
 
-Specifies the state of one lamp. 
-
-The TIMER-MS is the delay between the state changes ("on" -> "off" and vice versa) in milliseconds.
+Specifies the state of one lamp and the *TIMER-MS* is the blink interval in milliseconds.
 
     BODY     = "lamp" SP COLOR SP MODE LF
     COLOR    = ("red" | "yellow" | "green" )
@@ -16,7 +14,7 @@ Example:
     lamp red on
     lamp green blink 500
 
-With this the red lamp would be on, the yellow lamp off and the green one would blink in an 500ms interval.
+In this example the red lamp would be on, the yellow lamp off and the green one would blink in an 500ms interval.
 
 
 Update timer
