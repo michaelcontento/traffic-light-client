@@ -43,7 +43,7 @@ Response
 --------
 
 The response is also just a simple `HTTP-Response`_ (`MIME type`_: ``text-plain``) with a human readable text protocol as body. 
-And the text protocol is a compilation of one or more of the following events.
+The text protocol is a compilation of one or more of the following events.
 
 .. _HTTP-Response: http://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Server_response
 .. _MIME type: http://en.wikipedia.org/wiki/MIME_type
@@ -70,8 +70,8 @@ R-BNF is fully specified at the `Google Safe Browsing API docs`_ - but here are 
 .. _PCRE: http://en.wikipedia.org/wiki/Perl_Compatible_Regular_Expressions
 .. _Google Safe Browsing API docs: http://code.google.com/apis/safebrowsing/developers_guide_v2.html#ProtocolSpecificationRBNF
 
-Lamp
-````
+Event: Lamp
+```````````
 
 Specifies the current state for one lamp. Usually the response contains three lamp message (one for each color).
 
@@ -93,8 +93,8 @@ In this example the red lamp would be on, the yellow lamp off and the green one 
 **Nerd-Expoit-Prevention**: ``lamp red blink 0`` is treated as ``lamp red off``
 
 
-Update timer (ttl)
-``````````````````
+Event: Update timer (ttl)
+`````````````````````````
 
 Delay in ms for the next request to the server - or "stay in this configuration for XX ms".
 
@@ -110,8 +110,8 @@ In this case the client would ask the server again after 5000ms.
 
 **Nerd-Expoit-Prevention**: ``ttl 0`` is treated as ``ttl 1000``
 
-Text
-````
+Event: Text
+```````````
 
 The text that is displayed on the LCD-Display. And the number specifies the length of the message body.
 
