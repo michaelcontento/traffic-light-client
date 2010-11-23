@@ -1,14 +1,23 @@
 Traffic Light Client
 ====================
 
+    TODO
+
 Requirements
 ------------
+
+* `Arduino`_
+* `Arduino Ethernet Shield`_
+* `Traffic Light`_
+
+.. _Arduino Ethernet Shield: http://www.arduino.cc/en/Main/ArduinoEthernetShield
+.. _Traffic Light: http://shop.ebay.com/?_from=R40&_trksid=p5197.m570.l1313&_nkw=traffic+light&_sacat=See-All-Categories
+.. _Arduino: http://arduino.cc/en/Main/Software
 
 Installation and usage
 ----------------------
 
-Current ToDo-List
------------------
+    TODO
 
 License
 -------
