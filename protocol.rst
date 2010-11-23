@@ -90,6 +90,8 @@ Example::
 
 In this example the red lamp would be on, the yellow lamp off and the green one would blink in an 500ms interval.
 
+**Nerd-Expoit-Prevention**: ``lamp red blink 0`` is treated as ``lamp red off``
+
 
 Update timer (ttl)
 ``````````````````
@@ -105,6 +107,8 @@ Example::
     ttl 5000\n
 
 In this case the client would ask the server again after 5000ms.
+
+**Nerd-Expoit-Prevention**: ``ttl 0`` is treated as ``ttl 1000``
 
 Text
 ````
