@@ -1,11 +1,58 @@
 Protocol Specification
 ======================
 
-R-BNF
------
+This is the specification of the lamp-control-procotol used by `Traffic Light Client`_ and the `Traffic Light Server`_.
 
-This document uses a R-BNF notation, which is a mix between Extended BNF and PCRE-style regular expressions.
-Fully specified at the `Google Safe Browsing API docs`_ but here are the parts that are important for document:
+.. _Traffic Light Client: https://github.com/michaelcontento/traffic-light-client
+.. _Traffic Light Server: https://github.com/michaelcontento/traffic-light-server
+
+Overview
+--------
+
+The basic workflow is very simple:
+
+1. The client asks the server for the next state
+2. The server generates the response
+3. The client reads the response and switch into the new state
+4. The client remains in the current state for the TTL
+5. Goto 1)
+
+Diagramm::
+
+                         CLIENT   *   SERVER
+                                  *
+                                  *
+    START  ---------+             *
+       ^            | REQUEST     *
+       |            |             *
+    TTL DELAY       +----------------> GENERATE
+       ^            +----------------- NEXT STATE
+       |            |             *
+    STATE           | RESPONSE    *      
+    CHANGE <--------+             * 
+                                  *
+
+Request
+-------
+
+The request is just a simple `HTTP-Request`_ to the server. Nothing special or complicated.
+
+.. _HTTP-Request: http://en.wikipedia.org/wiki/Http_request#Request_message
+
+Response
+--------
+
+The response is also just a simple `HTTP-Response`_ (`MIME type`_: ``text-plain``) with a human readable text protocol as body. 
+And the text protocol is a compilation of one or more of the following events.
+
+.. _HTTP-Response: http://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Server_response
+.. _MIME type: http://en.wikipedia.org/wiki/MIME_type
+
+R-BNF
+`````
+
+This document uses a R-BNF notation, which is a mix between `Extended BNF`_ and `PCRE`_-style regular expressions.
+R-BNF is fully specified at the `Google Safe Browsing API docs`_ - but here are the important parts for this document:
 
 * Rules are in the form: name = definition. Rule names referenced as-is in the definition. Angle brackets may be used to help facilitate discerning the use of rule names.
 * Literals are surrounded by quotation marks: "literal".
@@ -19,19 +66,21 @@ Fully specified at the `Google Safe Browsing API docs`_ but here are the parts t
 * SP = <US-ASCII SP, space (32)>
 * DIGIT = <any US-ASCII digit "0".."9">
 
+.. _Extended BNF: http://en.wikipedia.org/wiki/Extended_Backus%E2%80%93Naur_Form
+.. _PCRE: http://en.wikipedia.org/wiki/Perl_Compatible_Regular_Expressions
 .. _Google Safe Browsing API docs: http://code.google.com/apis/safebrowsing/developers_guide_v2.html#ProtocolSpecificationRBNF
 
-Message: Lamp
--------------
+Lamp
+````
 
-Specifies the state of one lamp and the *TIMER-MS* is the blink interval in milliseconds.
+Specifies the current state for one lamp. Usually the response contains three lamp message (one for each color).
 
 Definition::
 
     BODY     = "lamp" SP COLOR SP MODE LF
     COLOR    = ("red" | "yellow" | "green" )
-    MODE     = ("on" | "off" | "blink" SP TIMER-MS)
-    TIMER-MS = DIGIT+
+    MODE     = ("on" | "off" | "blink" SP INTERVAL)
+    INTERVAL = DIGIT+
 
 Example::
 
@@ -42,11 +91,10 @@ Example::
 In this example the red lamp would be on, the yellow lamp off and the green one would blink in an 500ms interval.
 
 
-Message: Update timer (ttl)
----------------------------
+Update timer (ttl)
+``````````````````
 
-Delay in ms for the next request to the server.
-    
+Delay in ms for the next request to the server - or "stay in this configuration for XX ms".
 
 Definition::
 
@@ -58,14 +106,15 @@ Example::
 
 In this case the client would ask the server again after 5000ms.
 
-Message: Text
--------------
+Text
+````
 
-The text that is displayed on the LCD-Display. 
+The text that is displayed on the LCD-Display. And the number specifies the length of the message body.
 
 Definition::
 
-    BODY = "text" SP DIGIT+ SP [CHAR+] LF
+    BODY   = "text" SP LENGTH SP [CHAR+] LF
+    LENGTH = DIGIT+
 
 Example::
     
@@ -73,3 +122,4 @@ Example::
 
     text 12 Hello\n
     World\n
+
