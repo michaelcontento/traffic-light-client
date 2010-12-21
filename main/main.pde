@@ -14,10 +14,11 @@ byte gateway[] = { 192, 168, 71, 254 };
 byte subnet[]  = { 255, 255, 252, 0 };
 
 // The traffic-light-server that should be used
-byte server[]  = { 127, 0, 0, 1 };
-#define serverPort 80
+byte server[]  = { 192, 168, 70, 105 };
+#define serverPort 8804
 #define serverPath "/"
-#define serverReadDelay 100
+#define serverReadDelay 250
+#define minTTL 10000
 
 /***************************************************
  **        DON'T TOUCH ANYTHING BELOW HERE        **
@@ -30,137 +31,96 @@ byte server[]  = { 127, 0, 0, 1 };
 // Modes for the lamps
 #define MODE_ON           "on"
 #define MODE_OFF          "off"
-#deinfe MODE_BLINK        "blink"
+#define MODE_BLINK        "blink"
 
 // Length for the used String object
-#define maxResponseLength 1024
-#define maxTextLength     255
+#define maxResponseLength 200
+#define maxTextLength     25
 
 // Variables used for the communication 
-Client client(server, serverPort);
-String        response           = String(maxResponseLength);
-unsigned long nextStateChange    = 0;
+Client        client(server, serverPort);
+unsigned long nextStateChange   = 0;
 
 // Variables to track the current state 
-String        text               = String(maxTextLength);
-char*         modeLampRed        = MODE_OFF;
-char*         modeLampYellow     = MODE_OFF;
-char*         modeLampGreen      = MODE_OFF;
-unsigned int  intervalLampRed    = 0;
-unsigned int  intervalLampYellow = 0;
-unsigned int  intervalLampGreen  = 0;
+String       text               = String(maxTextLength);
+String       modeLampRed        = MODE_OFF;
+String       modeLampYellow     = MODE_OFF;
+String       modeLampGreen      = MODE_OFF;
+unsigned int intervalLampRed    = 0;
+unsigned int intervalLampYellow = 0;
+unsigned int intervalLampGreen  = 0;
 
-void logError(char* message)
-{
-    Serial.writeln("ERROR: " + message);
-}
-
-void logInfo(char* message)
-{
-    Serial.writeln("INFO : " + message);
-}
-
+// Variables for the response parsing
+String response = String(maxResponseLength);
+String event = String(maxResponseLength);
+int posNewLine = 0;
+boolean ttlParsed = false;
+    
 void changeState()
-{
+{      
     // Request the job status page
-    client.print("GET ");
-    client.print(hudsonJobName);
+    client.println("GET /");
     client.println();
     delay(serverReadDelay);
            
     // Read response from the server
-    response = ""; 
-    for (char c; c != -1; c = client.read()) {
-        response.append(c);
-    }     
+    response = "";       
+    while (client.available() > 0) {
+        response += (char) client.read();
+    }      
    
-    // Base positions - used to split the event 
-    int posNewLine     = 0;
-    int posFirstSpace  = 0;
-    int posSecondSpace = 0;
-
+    ttlParsed = false;
+   
     // Process every event in the response
     while (response.length() > 0) {
-        posNewLine     = response.indexOf("\n");
-        posFirstSpace  = response.indexOf(" ");
-        posSecondSpace = response.indexOf(" ", posFirstSpace);
-
-        switch (response.substr(0, 3)) {
-            case "lamp":
-                char*        color              = response.substr(posFirstSpace, posSecondSpace);
-                String       mode               = response.substr(posSecondSpace, 5);
-                char*        targetLampMode     = MODE_OFF;
-                unsigned int targetLampInterval = 0;
-
-                switch (color) {
-                    case "red":
-                        targetLampMode     = &modeLampRed;
-                        targetLampInterval = &intervalLampRed;
-                        break;
-
-                    case "yellow":
-                        targetLampMode     = &modeLampYellow;
-                        targetLampInterval = &intervalLampYellow;
-                        break;
-
-                    case "green":
-                        targetLampMode     = &modeLampGreen;
-                        targetLampInterval = &intervalLampGreen;
-                        break;
-
-                    default:
-                        logError("response: invalid color: " + color);
-                }
-
-                if (mode.startsWith(MODE_ON)) {
-                    targetLampMode     = MODE_ON;
-                    targetLampInterval = 0;
-                } else if (mode.startsWith(MODE_OFF)) {
-                    targetLampMode     = MODE_OFF;
-                    targetLampInterval = 0;
-                } else if (mode.startsWith(MODE_BLINK)) {
-                    int posThirdSpace  = response.indexOf(" ", posSecondSpace);
-                    targetLampMode     = MODE_BLINK;
-                    targetLampInterval = response.substr(posThirdSpace, posNewLine);
-                } else {
-                    logError("response: invalid mode: " + mode.substr(0, 5).toCharArray());
-                }
-
-                response = response.substr(posNewLine);
-                break;
-
-            case "ttl ":
-                int ttl         = response.substring(posFirstSpace, posNewLine);
-                nextStateChange = millis() + ttl;
-                response        = response.substr(posNewLine);
-                logInfo("response: next state change in ~" + ttl + "ms");
-                break;
-
-            case "text":
-                int textLength = response.substr(posFirstSpace, postSecondSpace);
-                text           = response.substr(posSecondSpace, min(textLength, maxTextLength);
-                response       = response.substr(textLength);
-                break;
-        
-            default:
-                logError("response: invalid event: " + response.substr(0, 5).toCharArray());
-                response = response.substr(posNewLine);
+        posNewLine = response.indexOf("\n");      
+        event      = response.substring(0, 5);     
+     
+        if (event.startsWith("lamp")) {
+            String        body               = response.substring(5, posNewLine);   
+            String*       targetLampMode     = NULL;
+            unsigned int* targetLampInterval = 0;
+    
+            if (body.startsWith("red")) {
+                targetLampMode     = &modeLampRed;
+                targetLampInterval = &intervalLampRed;
+            } else if (body.startsWith("yellow")) {
+                targetLampMode     = &modeLampYellow;
+                targetLampInterval = &intervalLampYellow;
+            } else if (body.startsWith("green")) {
+                targetLampMode     = &modeLampGreen;
+                targetLampInterval = &intervalLampGreen;
+            }
+    
+            if (body.endsWith(MODE_ON)) {
+                *targetLampMode     = MODE_ON;
+                *targetLampInterval = 0;
+            } else if (body.endsWith(MODE_OFF)) {
+                *targetLampMode     = MODE_OFF;
+                *targetLampInterval = 0;
+            }    
+        } else if (event.startsWith("ttl")) {
+            ttlParsed = true;
+            char ttlString[10] = "";
+            response.substring(4, posNewLine).toCharArray(ttlString, 25);
+            nextStateChange = millis() + max(minTTL, atoi(ttlString));
         }
-    }
-}
+        
+        response = response.substring(posNewLine + 1);
+    }   
+    
+    if (!ttlParsed) { 
+        nextStateChange = millis() + minTTL;
+    }      
+ }
 
 void setup()
 {
-    pinMode(lampRed,    OUTPUT);
-    pinMode(lampYellow, OUTPUT);
-    pinMode(lampGreen,  OUTPUT);
+    pinMode(pinLampRed,    OUTPUT);
+    pinMode(pinLampYellow, OUTPUT);
+    pinMode(pinLampGreen,  OUTPUT);
 
-    Ethernet.begin(mac, ip, gateway, subnet);
-    Serial.begin(9600);    
-
-    logInfo("setup done");
-    // TODO: Add the interrupt handling
-    // TODO: Implement the blink logic in the interrupt method
+    Ethernet.begin(mac, ip, gateway, subnet);  
 }
 
 void loop()
@@ -170,6 +130,11 @@ void loop()
             changeState();
             client.stop();             
         }
+        
+        digitalWrite(pinLampRed,    (modeLampRed    == MODE_ON) ? HIGH : LOW);
+        digitalWrite(pinLampYellow, (modeLampYellow == MODE_ON) ? HIGH : LOW);
+        digitalWrite(pinLampGreen,  (modeLampGreen  == MODE_ON) ? HIGH : LOW);    
     }
 }
+
 
