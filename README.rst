@@ -1,8 +1,3 @@
-Traffic Light Client
-====================
-
-    TODO
-
 Requirements
 ------------
 
